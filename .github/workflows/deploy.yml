@@ -7,8 +7,8 @@ on:
     branches: [ main ]
 
 env:
-  DOCKER_IMAGE: your-dockerhub-username/dockerhub-auto-deploy
-  CONTAINER_NAME: dockerhub-auto-deploy
+  DOCKER_IMAGE: vaibhabhosale1/autodock
+  CONTAINER_NAME: autodock
 
 jobs:
   test:
