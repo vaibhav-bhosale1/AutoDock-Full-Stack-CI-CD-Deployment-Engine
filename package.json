@@ -1,5 +1,5 @@
 {
-  "name": "dockerhub-auto-deploy",
+  "name": "Autodock",
   "version": "1.0.0",
   "description": "Full-stack app with Docker auto-deployment",
   "main": "server/index.js",
