@@ -14,7 +14,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     name: 🧪 Test Application
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -53,7 +53,7 @@ jobs:
     runs-on: ubuntu-latest
     name: 🐳 Build and Push Docker Image
     if: github.ref == 'refs/heads/main'
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -94,7 +94,7 @@ jobs:
     runs-on: ubuntu-latest
     name: 🚀 Deploy to AWS EC2
     if: github.ref == 'refs/heads/main'
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -109,89 +109,83 @@ jobs:
         script: |
           set -e
           sudo apt-get update
-          
+
           # Install Docker if missing
           if ! command -v docker &> /dev/null; then
             curl -fsSL https://get.docker.com -o get-docker.sh
             sudo sh get-docker.sh
             sudo usermod -aG docker $USER
           fi
-          
+
           # Install Docker Compose v2 if missing
           if ! command -v docker compose &> /dev/null; then
             sudo curl -L "https://github.com/docker/compose/releases/download/v2.21.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
             sudo chmod +x /usr/local/bin/docker-compose
             sudo ln -s /usr/local/bin/docker-compose /usr/local/bin/docker
           fi
-          
+
           # Create app directory
           mkdir -p ~/dockerhub-auto-deploy
           cd ~/dockerhub-auto-deploy
-          
-       
-          
-          # Clean up containers and images
+
+          # Stop and remove old container (safe cleanup)
+          docker stop autodock 2>/dev/null || true
+          docker rm autodock 2>/dev/null || true
+
+          # Clean up unused containers and images
           docker container prune -f
           docker image prune -f
-          
+
           # Pull latest image
-          docker pull ${{ env.DOCKER_IMAGE }}:latest
-          # Stop and remove old container (safe cleanup)
-          docker stop ${{ env.CONTAINER_NAME }} 2>/dev/null || true
-          docker rm ${{ env.CONTAINER_NAME }} 2>/dev/null || true
-          # Create docker-compose.yml
-          cat > docker-compose.yml << EOF
-          
-          # Create docker-compose.yml
-          cat > docker-compose.yml << EOF
-          version: '3.8'
-          services:
-            app:
-              image: ${{ env.DOCKER_IMAGE }}:latest
-              container_name: ${{ env.CONTAINER_NAME }}
-              ports:
-                - "5000:5000"
-              environment:
-                - NODE_ENV=production
-                - PORT=5000
-              restart: unless-stopped
-              healthcheck:
-                test: ["CMD-SHELL", "curl -f http://localhost:5000/api/health || exit 1"]
-                interval: 30s
-                timeout: 10s
-                retries: 3
-                start_period: 40s
-          EOF
-          
+          docker pull vaibhavbhosale1/autodock:latest
+
+          # Create docker-compose.yml (no variable expansion inside heredoc)
+          cat > docker-compose.yml << 'EOF'
+version: '3.8'
+services:
+  app:
+    image: vaibhavbhosale1/autodock:latest
+    container_name: autodock
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+EOF
+
           # Start container
           docker compose up -d
-          
+
           # Wait for health check
           sleep 30
           curl -f http://localhost:5000/api/health || (docker compose logs && exit 1)
-          
-          # Clean up old images
-          docker image prune -f
-          
+
           # Log rotation
-          sudo tee /etc/logrotate.d/docker-logs > /dev/null << EOF
-          /var/lib/docker/containers/*/*.log {
-              rotate 7
-              daily
-              compress
-              size=1M
-              missingok
-              delaycompress
-              copytruncate
-          }
-          EOF
+          sudo tee /etc/logrotate.d/docker-logs > /dev/null << 'EOF'
+/var/lib/docker/containers/*/*.log {
+    rotate 7
+    daily
+    compress
+    size=1M
+    missingok
+    delaycompress
+    copytruncate
+}
+EOF
 
   notify:
     needs: [test, build-and-push, deploy]
     runs-on: ubuntu-latest
     name: 📢 Notify Deployment Status
     if: always()
-    
+
     steps:
     - name: Notify Success
       if: needs.deploy.result == 'success'
@@ -200,7 +194,7 @@ jobs:
         echo "✅ Tests passed"
         echo "🐳 Docker image built and pushed"
         echo "🚀 Application deployed to EC2"
-        
+
     - name: Notify Failure
       if: failure()
       run: |
