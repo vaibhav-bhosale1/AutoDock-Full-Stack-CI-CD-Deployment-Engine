@@ -1,0 +1,204 @@
+name: 🚀 Deploy to DockerHub and AWS EC2
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  DOCKER_IMAGE: your-dockerhub-username/dockerhub-auto-deploy
+  CONTAINER_NAME: dockerhub-auto-deploy
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: 🧪 Test Application
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: |
+        npm install
+        cd server && npm install
+        cd ../client && npm install
+
+    - name: Test backend
+      run: |
+        cd server && npm test
+
+    - name: Build frontend
+      run: |
+        cd client && npm run build
+
+    - name: Test Docker build
+      run: |
+        docker build -t test-image .
+        docker run -d --name test-container -p 5000:5000 test-image
+        sleep 10
+        curl -f http://localhost:5000/api/health || exit 1
+        docker stop test-container
+        docker rm test-container
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    name: 🐳 Build and Push Docker Image
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to DockerHub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.DOCKER_IMAGE }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          latest
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64,linux/arm64
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    name: 🚀 Deploy to AWS EC2
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USERNAME }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        port: 22
+        script: |
+          set -e
+          sudo apt-get update
+          
+          # Install Docker if missing
+          if ! command -v docker &> /dev/null; then
+            curl -fsSL https://get.docker.com -o get-docker.sh
+            sudo sh get-docker.sh
+            sudo usermod -aG docker $USER
+          fi
+          
+          # Install Docker Compose v2 if missing
+          if ! command -v docker compose &> /dev/null; then
+            sudo curl -L "https://github.com/docker/compose/releases/download/v2.21.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
+            sudo ln -s /usr/local/bin/docker-compose /usr/local/bin/docker
+          fi
+          
+          # Create app directory
+          mkdir -p ~/dockerhub-auto-deploy
+          cd ~/dockerhub-auto-deploy
+          
+          # Stop existing containers
+          docker compose down || true
+          
+          # Clean up containers and images
+          docker container prune -f
+          docker image prune -f
+          
+          # Pull latest image
+          docker pull ${{ env.DOCKER_IMAGE }}:latest
+          
+          # Create docker-compose.yml
+          cat > docker-compose.yml << EOF
+          version: '3.8'
+          services:
+            app:
+              image: ${{ env.DOCKER_IMAGE }}:latest
+              container_name: ${{ env.CONTAINER_NAME }}
+              ports:
+                - "5000:5000"
+              environment:
+                - NODE_ENV=production
+                - PORT=5000
+              restart: unless-stopped
+              healthcheck:
+                test: ["CMD-SHELL", "curl -f http://localhost:5000/api/health || exit 1"]
+                interval: 30s
+                timeout: 10s
+                retries: 3
+                start_period: 40s
+          EOF
+          
+          # Start container
+          docker compose up -d
+          
+          # Wait for health check
+          sleep 30
+          curl -f http://localhost:5000/api/health || (docker compose logs && exit 1)
+          
+          # Clean up old images
+          docker image prune -f
+          
+          # Log rotation
+          sudo tee /etc/logrotate.d/docker-logs > /dev/null << EOF
+          /var/lib/docker/containers/*/*.log {
+              rotate 7
+              daily
+              compress
+              size=1M
+              missingok
+              delaycompress
+              copytruncate
+          }
+          EOF
+
+  notify:
+    needs: [test, build-and-push, deploy]
+    runs-on: ubuntu-latest
+    name: 📢 Notify Deployment Status
+    if: always()
+    
+    steps:
+    - name: Notify Success
+      if: needs.deploy.result == 'success'
+      run: |
+        echo "🎉 Deployment completed successfully!"
+        echo "✅ Tests passed"
+        echo "🐳 Docker image built and pushed"
+        echo "🚀 Application deployed to EC2"
+        
+    - name: Notify Failure
+      if: failure()
+      run: |
+        echo "❌ Deployment failed!"
+        echo "Check the logs above for details"
