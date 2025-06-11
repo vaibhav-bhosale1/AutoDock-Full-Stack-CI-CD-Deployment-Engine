@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 env:
-  DOCKER_IMAGE: vaibhabhosale1/autodock
+  DOCKER_IMAGE: vaibhavbhosale1/autodock
   CONTAINER_NAME: autodock
 
 jobs:

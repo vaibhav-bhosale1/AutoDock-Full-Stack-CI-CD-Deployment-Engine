@@ -1,11 +1,18 @@
 # Multi-stage build for optimization
-
 # Stage 1: Build React frontend
 FROM node:18-alpine AS frontend-build
 WORKDIR /app/client
+
+# Copy package files
 COPY client/package*.json ./
-RUN npm ci --only=production
+
+# Install dependencies (remove --only=production for build stage)
+RUN npm install --legacy-peer-deps --verbose 2>&1 | tee npm-install.log || (cat npm-install.log && exit 1)
+
+# Copy source code
 COPY client/ ./
+
+# Build the application
 RUN npm run build
 
 # Stage 2: Setup backend and serve
@@ -19,7 +26,14 @@ WORKDIR /app
 
 # Copy backend package files
 COPY server/package*.json ./server/
-RUN cd server && npm ci --only=production && npm cache clean --force
+
+# Install backend dependencies with better error handling
+WORKDIR /app/server
+RUN npm install --only=production --no-audit --no-fund && \
+    npm cache clean --force
+
+# Return to app directory
+WORKDIR /app
 
 # Copy backend source
 COPY server/ ./server/
@@ -33,6 +47,7 @@ RUN addgroup -g 1001 -S nodejs && \
 
 # Change ownership of app directory
 RUN chown -R nodejs:nodejs /app
+
 USER nodejs
 
 # Expose port
