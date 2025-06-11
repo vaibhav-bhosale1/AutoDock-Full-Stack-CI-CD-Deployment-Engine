@@ -5,7 +5,7 @@ WORKDIR /app/client
 
 # Copy and install frontend dependencies
 COPY client/package.json client/package-lock.json ./
-RUN npm ci
+RUN npm install
 
 # Copy the rest of the frontend code
 COPY client/ ./
@@ -24,7 +24,7 @@ WORKDIR /app/server
 
 # Copy and install backend dependencies
 COPY server/package.json server/package-lock.json ./
-RUN npm ci --only=production && npm cache clean --force
+RUN npm install --only=production && npm cache clean --force
 
 # Copy backend code
 COPY server/ ./
