@@ -128,8 +128,7 @@ jobs:
           mkdir -p ~/dockerhub-auto-deploy
           cd ~/dockerhub-auto-deploy
           
-          # Stop existing containers
-          docker compose down || true
+       
           
           # Clean up containers and images
           docker container prune -f
@@ -137,6 +136,11 @@ jobs:
           
           # Pull latest image
           docker pull ${{ env.DOCKER_IMAGE }}:latest
+          # Stop and remove old container (safe cleanup)
+          docker stop ${{ env.CONTAINER_NAME }} 2>/dev/null || true
+          docker rm ${{ env.CONTAINER_NAME }} 2>/dev/null || true
+          # Create docker-compose.yml
+          cat > docker-compose.yml << EOF
           
           # Create docker-compose.yml
           cat > docker-compose.yml << EOF
