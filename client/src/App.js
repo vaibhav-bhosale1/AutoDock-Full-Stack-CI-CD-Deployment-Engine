@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 
-const API_BASE_URL = 'http://34.201.136.101:5000';
 
 function App() {
   const [status, setStatus] = useState(null);
