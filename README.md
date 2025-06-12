@@ -1,6 +1,7 @@
 # 🐳 DockerHub Auto-Deploy System
 
 Complete CI/CD pipeline with Docker, GitHub Actions, and AWS EC2 deployment.
+you can view at https://github.com/vaibhav-bhosale1/AutoDock-Full-Stack-CI-CD-Deployment-Engine/actions/runs/15603376044
 
 ## 🚀 Features
 
@@ -33,6 +34,7 @@ bashnpm run dev
 See GITHUB_SECRETS.md for detailed instructions.
 5. Deploy to AWS
 See AWS_SETUP.md for EC2 configuration.
+
 🏗️ Architecture
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
 │   GitHub Repo   │───▶│  GitHub Actions  │───▶│   DockerHub     │
