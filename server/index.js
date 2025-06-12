@@ -24,9 +24,26 @@ let projects = [];
 let systemInfo = {};
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  crossOriginEmbedderPolicy: false,
+}));
 app.use(morgan('combined'));
-app.use(cors());
+
+// CORS configuration
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:3001', 
+    'http://34.201.136.101:3000',
+    'http://34.201.136.101:3001',
+    'http://34.201.136.101',
+    '*' // Allow all origins in development
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -230,6 +247,15 @@ initializeSystemData();
 
 // Refresh system data every 30 seconds
 setInterval(initializeSystemData, 30000);
+
+// Test endpoint to verify server is reachable
+app.get('/api/test', (req, res) => {
+  res.json({
+    message: 'Server is reachable!',
+    timestamp: new Date().toISOString(),
+    headers: req.headers
+  });
+});
 
 // Health check endpoint for Docker/AWS
 app.get('/api/health', async (req, res) => {
