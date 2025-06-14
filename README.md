@@ -1,4 +1,4 @@
-# 🐳 DockerHub Auto-Deploy System
+# 🐳 Autodock Auto-Deploy System
 
 Complete CI/CD pipeline with Docker, GitHub Actions, and AWS EC2 deployment.
 
@@ -24,8 +24,8 @@ you can view  pipeline at https://github.com/vaibhav-bhosale1/AutoDock-Full-Stac
 
 ### 1. Clone Repository
 ```bash
-git clone https://github.com/your-username/dockerhub-auto-deploy.git
-cd dockerhub-auto-deploy
+git clone https://github.com/vaibhav-bhosale1/AutoDock-Full-Stack-CI-CD-Deployment
+cd AutoDock-Full-Stack-CI-CD-Deployment
 
 2. Install Dependencies
 bashnpm run install-all
@@ -120,8 +120,8 @@ npm run dev
 npm run build
 
 # 4. Test Docker build locally
-docker build -t dockerhub-auto-deploy .
-docker run -p 5000:5000 dockerhub-auto-deploy
+docker build -t autodock .
+docker run -p 5000:5000 autodock
 
 # 5. Deploy to production (via GitHub Actions)
 git add .
