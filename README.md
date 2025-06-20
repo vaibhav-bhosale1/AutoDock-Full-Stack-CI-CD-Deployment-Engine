@@ -4,7 +4,7 @@ Complete CI/CD pipeline with Docker, GitHub Actions, and AWS EC2 deployment
 
 you can view  pipeline at https://github.com/vaibhav-bhosale1/AutoDock-Full-Stack-CI-CD-Deployment-Engine/actions/runs/15603376044
 
-## 🚀 Features
+##  Features
 
 - **Full-Stack Application**: Node.js backend + React frontend
 - **Docker Containerization**: Multi-stage optimized builds
