@@ -34,9 +34,9 @@ app.use(cors({
   origin: [
     'http://localhost:3000',
     'http://localhost:3001', 
-    'http://34.201.136.101:3000',
-    'http://34.201.136.101:3001',
-    'http://34.201.136.101',
+    'http://54.226.97.70:3000',
+    'http://54.226.97.70:3001',
+    'http://54.226.97.70',
     '*' // Allow all origins in development
   ],
   credentials: true,
@@ -392,7 +392,7 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔗 Health check: http://localhost:${PORT}/api/health`);
-  console.log(`🌐 Public Access: http://34.201.136.101:${PORT}`);
+  console.log(`🌐 Public Access: 54.226.97.70:${PORT}`);
 });
 
 // Graceful shutdown
