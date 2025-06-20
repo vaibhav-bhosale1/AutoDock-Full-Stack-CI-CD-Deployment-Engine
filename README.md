@@ -1,6 +1,6 @@
 # 🐳 Autodock Auto-Deploy System
 
-Complete CI/CD pipeline with Docker, GitHub Actions, and AWS EC2 deployment.
+Complete CI/CD pipeline with Docker, GitHub Actions, and AWS EC2 deployment
 
 you can view  pipeline at https://github.com/vaibhav-bhosale1/AutoDock-Full-Stack-CI-CD-Deployment-Engine/actions/runs/15603376044
 
